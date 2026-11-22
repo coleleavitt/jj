@@ -1440,6 +1440,11 @@ pub fn export_some_refs(
     let git_repo = get_git_repo(mut_repo.store())?;
 
     check_and_detach_head(&git_repo)?;
+    // `worktrees()` lists only the linked worktrees, so the main worktree's
+    // HEAD has to be checked separately when jj runs in a linked one.
+    if git_repo.kind() == gix::repository::Kind::LinkedWorkTree {
+        check_and_detach_head(&git_repo.main_repo()?)?;
+    }
     for worktree in git_repo.worktrees()? {
         if let Ok(worktree_repo) = worktree.into_repo_with_possibly_inaccessible_worktree() {
             check_and_detach_head(&worktree_repo)?;

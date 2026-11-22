@@ -2149,3 +2149,44 @@ fn get_colocation_status(work_dir: &TestWorkDir) -> CommandOutput {
         "--quiet", // suppress hint
     ])
 }
+
+#[test]
+fn test_git_colocated_linked_worktree_detaches_main_worktree_head() -> TestResult {
+    // A bookmark moved from a jj repo colocated with a linked Git worktree
+    // must not leave the main worktree on the moved branch.
+    let test_env = TestEnvironment::default();
+    let main_dir = test_env.work_dir("main");
+    let git_repo = git::init(main_dir.root());
+    let commit1 = git::add_commit(&git_repo, "refs/heads/main", "file", b"1", "one", &[]).commit_id;
+    git::add_commit(
+        &git_repo,
+        "refs/heads/main",
+        "file",
+        b"2",
+        "two",
+        &[commit1],
+    );
+    git::set_symbolic_reference(&git_repo, "HEAD", "refs/heads/main");
+    git::add_worktree(
+        main_dir.root(),
+        test_env.env_root().join("wt"),
+        Some("HEAD"),
+    );
+
+    let wt_dir = test_env.work_dir("wt");
+    wt_dir.run_jj(["git", "init", "--colocate"]).success();
+    wt_dir
+        .run_jj([
+            "bookmark",
+            "set",
+            "main",
+            "-r",
+            "main-",
+            "--allow-backwards",
+        ])
+        .success();
+
+    let git_repo = gix::open(main_dir.root())?;
+    assert!(git_repo.head()?.is_detached());
+    Ok(())
+}

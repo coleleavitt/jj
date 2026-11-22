@@ -77,6 +77,10 @@ and this project adheres to
   the same author name and email but different timestamps.
   [#10261](https://github.com/jj-vcs/jj/issues/10261)
 
+* When jj runs in a linked Git worktree, moving or deleting the bookmark that
+  the main worktree has checked out now detaches the main worktree's HEAD, as
+  it already did for other linked worktrees.
+
 ## [0.47.1] - 2026-11-04
 
 This release fixes a dependency error that broke Linux builds in the 0.47.0
